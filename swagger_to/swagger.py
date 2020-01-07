@@ -69,6 +69,7 @@ class Parameter:
         self.format = ''
         self.pattern = ''
         self.schema = None  # type: Optional[Typedef]
+        self.default_value = None  # type: Optional[str]
         self.ref = ''
         self.__lineno__ = 0
 
@@ -87,7 +88,6 @@ class Response:
         self.type = ''
         self.format = ''
         self.pattern = ''
-        self.default_value = None  # type: Optional[str]
         self.__lineno__ = 0
 
         # original specification dictionary, if available; not deep-copied, do not modify
