@@ -87,6 +87,7 @@ class Response:
         self.type = ''
         self.format = ''
         self.pattern = ''
+        self.default_value = None  # type: Optional[str]
         self.__lineno__ = 0
 
         # original specification dictionary, if available; not deep-copied, do not modify
@@ -237,7 +238,8 @@ def _parse_parameter(raw_dict: RawDict) -> Tuple[Parameter, List[str]]:
         errors.append('parameter in body, but no schema')
 
     if 'default' in adict:
-        errors.append('default values for parameters are not supported')
+        #errors.append('default values for parameters are not supported')
+        param.default_value = adict['default']
 
     return param, errors
 
