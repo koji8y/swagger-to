@@ -1,14 +1,29 @@
 """Parse Swagger spec."""
 
 import collections
+from enum import Enum
 import pathlib
-from typing import List, Optional, MutableMapping, Any, Tuple, Union  # pylint: disable=unused-import
+from typing import List, Optional, MutableMapping, Any, Set, Tuple, Union  # pylint: disable=unused-import
 
 import yaml
 from yaml.composer import Composer
 from yaml.constructor import Constructor
 
 # pylint: disable=missing-docstring,too-many-instance-attributes,too-many-locals,too-many-ancestors,too-many-branches
+
+
+class OptionKey(Enum):
+    """Key names for parse options."""
+
+    PermitAbsenseOfOperationId = "PermitAbsenseOfOperationId"
+    PermitTypeWithoutOptionalFormat = "PermitTypeWithoutOptionalFormat"
+    PermitAbsenseOfTagNameIfNoTagsExist = "PermitAbsenseOfTagNameIfNoTagsExist"
+
+
+parse_options: Set[OptionKey] = set(
+    (OptionKey.PermitAbsenseOfOperationId,
+     OptionKey.PermitTypeWithoutOptionalFormat,
+     OptionKey.PermitAbsenseOfTagNameIfNoTagsExist))
 
 
 class RawDict:
@@ -196,11 +211,13 @@ def _parse_typedef(raw_dict: RawDict) -> Tuple[Typedef, List[str]]:
 
     if typedef.type == 'number':
         if typedef.format not in ['float', 'double']:
-            errors.append("Unexpected format for type 'number': {!r}".format(typedef.format))
+            if OptionKey.PermitTypeWithoutOptionalFormat not in parse_options:
+                errors.append("Unexpected format for type 'number': {!r}".format(typedef.format))
 
     elif typedef.type == 'integer':
         if typedef.format not in ['int32', 'int64']:
-            errors.append("Unexpected format for type 'integer': {!r}".format(typedef.format))
+            if OptionKey.PermitTypeWithoutOptionalFormat not in parse_options:
+                errors.append("Unexpected format for type 'integer': {!r}".format(typedef.format))
 
     typedef.raw_dict = raw_dict
 
@@ -291,7 +308,8 @@ def _parse_method(raw_dict: RawDict) -> Tuple[Method, List[str]]:
 
     mth.operation_id = adict.get('operationId', '')
     if mth.operation_id == '':
-        errors.append('missing operationId')
+        if OptionKey.PermitAbsenseOfOperationId not in parse_options:        
+            errors.append('missing operationId')
 
     mth.tags = adict.get('tags', [])
     mth.description = adict.get('description', '').strip()
@@ -385,15 +403,19 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
     errors = []  # type: List[str]
 
     adict = raw_dict.adict
+    tag_exists: bool = False
     if 'tags' in adict:
         if len(adict['tags']) > 0:
+            tag_exists = True
             for tag in adict['tags']:
                 for key, value in tag.adict.items():
                     if key == 'name':
                         swagger.name = value
 
     if swagger.name == '':
-        errors.append('missing tag "name" in the swagger specification')
+        if not (OptionKey.PermitAbsenseOfTagNameIfNoTagsExist in parse_options
+                and not tag_exists):
+            errors.append('missing tag "name" in the swagger specification')
 
     swagger.base_path = adict.get('basePath', '')
 
