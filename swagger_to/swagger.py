@@ -36,6 +36,7 @@ class Typedef:
         self.required = []  # type: List[str]
         self.items = None  # type: Optional[Typedef]
         self.additional_properties = None  # type: Optional[Typedef]
+        self.additional_properties_in_bool = None  # type: Optional[bool]
         self.__lineno__ = 0
 
         # original specification dictionary, if available; not deep-copied, do not modify
@@ -178,10 +179,13 @@ def _parse_typedef(raw_dict: RawDict) -> Tuple[Typedef, List[str]]:
 
     if 'additionalProperties' in adict:
         add_prop_dict = adict['additionalProperties']
-        add_prop_typedef, add_prop_errors = _parse_typedef(raw_dict=add_prop_dict)
+        if isinstance(add_prop_dict, bool):
+            typedef.additional_properties_in_bool = add_prop_dict
+        else:
+            add_prop_typedef, add_prop_errors = _parse_typedef(raw_dict=add_prop_dict)
 
-        errors.extend(['in additionalProperties: {}'.format(error) for error in add_prop_errors])
-        typedef.additional_properties = add_prop_typedef
+            errors.extend(['in additionalProperties: {}'.format(error) for error in add_prop_errors])
+            typedef.additional_properties = add_prop_typedef
 
     if 'items' in adict:
         items_dict = adict['items']
