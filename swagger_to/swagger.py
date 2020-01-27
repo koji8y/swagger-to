@@ -304,6 +304,10 @@ def _parse_method(raw_dict: RawDict) -> Tuple[Method, List[str]]:
     """
     mth = Method()
     errors = []  # type: List[str]
+    if not isinstance(raw_dict, RawDict):
+        return mth, (
+            'Illegal type for method - othern than RawDict: {}'.format(
+                type(raw_dict)))
     adict = raw_dict.adict
 
     mth.operation_id = adict.get('operationId', '')
